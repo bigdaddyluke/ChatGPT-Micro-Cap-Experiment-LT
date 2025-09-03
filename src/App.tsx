@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, DollarSign, BarChart3, Settings, Upload, Download, AlertTriangle } from 'lucide-react';
+import { TrendingUp, DollarSign, BarChart3, Settings, Upload, Download, AlertTriangle, ExternalLink } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Portfolio from './components/Portfolio';
 import TradeExecution from './components/TradeExecution';
 import DataImport from './components/DataImport';
-import { PortfolioData, TradeLog, DailyResult } from './types';
+import GoogleSheetsSetup from './components/GoogleSheetsSetup';
+import { PortfolioData, TradeLog, DailyResult, ChatGPTRecommendation } from './types';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [portfolioData, setPortfolioData] = useState<PortfolioData[]>([]);
   const [tradeLog, setTradeLog] = useState<TradeLog[]>([]);
   const [dailyResults, setDailyResults] = useState<DailyResult[]>([]);
+  const [recommendations, setRecommendations] = useState<ChatGPTRecommendation[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
     const savedPortfolio = localStorage.getItem('chatgpt-portfolio');
     const savedTrades = localStorage.getItem('chatgpt-trades');
     const savedResults = localStorage.getItem('chatgpt-results');
+    const savedRecommendations = localStorage.getItem('chatgpt-recommendations');
 
     if (savedPortfolio) {
       setPortfolioData(JSON.parse(savedPortfolio));
@@ -26,6 +29,9 @@ function App() {
     }
     if (savedResults) {
       setDailyResults(JSON.parse(savedResults));
+    }
+    if (savedRecommendations) {
+      setRecommendations(JSON.parse(savedRecommendations));
     }
   }, []);
 
@@ -42,10 +48,15 @@ function App() {
     localStorage.setItem('chatgpt-results', JSON.stringify(dailyResults));
   }, [dailyResults]);
 
+  useEffect(() => {
+    localStorage.setItem('chatgpt-recommendations', JSON.stringify(recommendations));
+  }, [recommendations]);
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'portfolio', label: 'Portfolio', icon: TrendingUp },
     { id: 'execution', label: 'Trade Execution', icon: DollarSign },
+    { id: 'sheets', label: 'Google Sheets', icon: ExternalLink },
     { id: 'import', label: 'Data Import', icon: Upload },
   ];
 
@@ -62,6 +73,21 @@ function App() {
             setPortfolioData={setPortfolioData}
             tradeLog={tradeLog}
             setTradeLog={setTradeLog}
+            recommendations={recommendations}
+            setRecommendations={setRecommendations}
+          />
+        );
+      case 'sheets':
+        return (
+          <GoogleSheetsSetup
+            portfolioData={portfolioData}
+            tradeLog={tradeLog}
+            dailyResults={dailyResults}
+            recommendations={recommendations}
+            setPortfolioData={setPortfolioData}
+            setTradeLog={setTradeLog}
+            setDailyResults={setDailyResults}
+            setRecommendations={setRecommendations}
           />
         );
       case 'import':

@@ -7,15 +7,18 @@ interface TradeExecutionProps {
   setPortfolioData: (data: PortfolioData[]) => void;
   tradeLog: TradeLog[];
   setTradeLog: (log: TradeLog[]) => void;
+  recommendations: ChatGPTRecommendation[];
+  setRecommendations: (recommendations: ChatGPTRecommendation[]) => void;
 }
 
 const TradeExecution: React.FC<TradeExecutionProps> = ({
   portfolioData,
   setPortfolioData,
   tradeLog,
-  setTradeLog
+  setTradeLog,
+  recommendations,
+  setRecommendations
 }) => {
-  const [recommendations, setRecommendations] = useState<ChatGPTRecommendation[]>([]);
   const [showAddRecommendation, setShowAddRecommendation] = useState(false);
   const [newRecommendation, setNewRecommendation] = useState({
     ticker: '',

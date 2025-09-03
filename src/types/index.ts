@@ -50,6 +50,12 @@ export interface ChatGPTRecommendation {
   executionNotes?: string;
 }
 
+export interface GoogleSheetsConfig {
+  webAppUrl: string;
+  isConnected: boolean;
+  lastSync?: string;
+}
+
 export interface PriceData {
   ticker: string;
   currentPrice: number;
