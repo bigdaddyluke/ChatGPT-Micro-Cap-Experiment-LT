@@ -6,7 +6,7 @@ import TradeExecution from './components/TradeExecution';
 import DataImport from './components/DataImport';
 import GoogleSheetsSetup from './components/GoogleSheetsSetup';
 import StartHere from './components/StartHere';
-import { PortfolioData, TradeLog, DailyResult, ChatGPTRecommendation } from './types';
+import { PortfolioData, TradeLog, DailyResult, ChatGPTRecommendation, ChatGPTInteraction } from './types';
 
 function App() {
   const [activeTab, setActiveTab] = useState('start');
@@ -14,6 +14,7 @@ function App() {
   const [tradeLog, setTradeLog] = useState<TradeLog[]>([]);
   const [dailyResults, setDailyResults] = useState<DailyResult[]>([]);
   const [recommendations, setRecommendations] = useState<ChatGPTRecommendation[]>([]);
+  const [chatgptInteractions, setChatgptInteractions] = useState<ChatGPTInteraction[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -21,6 +22,7 @@ function App() {
     const savedTrades = localStorage.getItem('chatgpt-trades');
     const savedResults = localStorage.getItem('chatgpt-results');
     const savedRecommendations = localStorage.getItem('chatgpt-recommendations');
+    const savedInteractions = localStorage.getItem('chatgpt-interactions');
 
     if (savedPortfolio) {
       setPortfolioData(JSON.parse(savedPortfolio));
@@ -33,6 +35,9 @@ function App() {
     }
     if (savedRecommendations) {
       setRecommendations(JSON.parse(savedRecommendations));
+    }
+    if (savedInteractions) {
+      setChatgptInteractions(JSON.parse(savedInteractions));
     }
 
     // If user has data, default to dashboard instead of start
@@ -58,6 +63,10 @@ function App() {
     localStorage.setItem('chatgpt-recommendations', JSON.stringify(recommendations));
   }, [recommendations]);
 
+  useEffect(() => {
+    localStorage.setItem('chatgpt-interactions', JSON.stringify(chatgptInteractions));
+  }, [chatgptInteractions]);
+
   const tabs = [
     { id: 'start', label: 'Start Here', icon: TrendingUp },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -74,6 +83,7 @@ function App() {
           <StartHere
             setPortfolioData={setPortfolioData}
             setRecommendations={setRecommendations}
+            setChatgptInteractions={setChatgptInteractions}
             onTabChange={setActiveTab}
           />
         );
@@ -99,10 +109,12 @@ function App() {
             tradeLog={tradeLog}
             dailyResults={dailyResults}
             recommendations={recommendations}
+            chatgptInteractions={chatgptInteractions}
             setPortfolioData={setPortfolioData}
             setTradeLog={setTradeLog}
             setDailyResults={setDailyResults}
             setRecommendations={setRecommendations}
+            setChatgptInteractions={setChatgptInteractions}
           />
         );
       case 'import':
@@ -118,6 +130,7 @@ function App() {
           <StartHere
             setPortfolioData={setPortfolioData}
             setRecommendations={setRecommendations}
+            setChatgptInteractions={setChatgptInteractions}
             onTabChange={setActiveTab}
           />
         );

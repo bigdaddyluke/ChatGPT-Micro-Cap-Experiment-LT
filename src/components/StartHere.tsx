@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Play, ExternalLink, Copy, CheckCircle, AlertCircle, DollarSign, TrendingUp } from 'lucide-react';
-import { PortfolioData, ChatGPTRecommendation } from '../types';
+import { PortfolioData, ChatGPTRecommendation, ChatGPTInteraction } from '../types';
 
 interface StartHereProps {
   setPortfolioData: (data: PortfolioData[]) => void;
   setRecommendations: (recommendations: ChatGPTRecommendation[]) => void;
+  setChatgptInteractions: (interactions: ChatGPTInteraction[]) => void;
   onTabChange: (tab: string) => void;
 }
 
-const StartHere: React.FC<StartHereProps> = ({ setPortfolioData, setRecommendations, onTabChange }) => {
+const StartHere: React.FC<StartHereProps> = ({ setPortfolioData, setRecommendations, setChatgptInteractions, onTabChange }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [startingCash, setStartingCash] = useState('100');
   const [webAppUrl, setWebAppUrl] = useState('');
@@ -122,8 +123,20 @@ const StartHere: React.FC<StartHereProps> = ({ setPortfolioData, setRecommendati
         executionNotes: 'Initial portfolio setup'
       };
 
+      // Create a ChatGPT interaction record
+      const interaction: ChatGPTInteraction = {
+        id: Date.now().toString() + '_interaction',
+        date: new Date().toISOString().split('T')[0],
+        prompt: initialPrompt,
+        response: chatgptResponse,
+        type: 'INITIAL_PORTFOLIO',
+        portfolioValue: parseFloat(startingCash),
+        cashBalance: parseFloat(startingCash) - portfolio.reduce((sum, p) => sum + p.costBasis, 0)
+      };
+
       setPortfolioData(portfolio);
       setRecommendations([recommendation]);
+      setChatgptInteractions([interaction]);
       setStatus({ type: 'success', message: `Successfully created portfolio with ${portfolio.length} positions!` });
       setCurrentStep(5);
     } catch (error) {

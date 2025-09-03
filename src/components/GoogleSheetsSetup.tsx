@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, ExternalLink, CheckCircle, AlertCircle, Copy, RefreshCw } from 'lucide-react';
-import { PortfolioData, TradeLog, DailyResult, ChatGPTRecommendation } from '../types';
+import { PortfolioData, TradeLog, DailyResult, ChatGPTRecommendation, ChatGPTInteraction } from '../types';
 
 interface GoogleSheetsSetupProps {
   portfolioData: PortfolioData[];
   tradeLog: TradeLog[];
   dailyResults: DailyResult[];
   recommendations: ChatGPTRecommendation[];
+  chatgptInteractions: ChatGPTInteraction[];
   setPortfolioData: (data: PortfolioData[]) => void;
   setTradeLog: (log: TradeLog[]) => void;
   setDailyResults: (results: DailyResult[]) => void;
   setRecommendations: (recommendations: ChatGPTRecommendation[]) => void;
+  setChatgptInteractions: (interactions: ChatGPTInteraction[]) => void;
 }
 
 const GoogleSheetsSetup: React.FC<GoogleSheetsSetupProps> = ({
@@ -18,10 +20,12 @@ const GoogleSheetsSetup: React.FC<GoogleSheetsSetupProps> = ({
   tradeLog,
   dailyResults,
   recommendations,
+  chatgptInteractions,
   setPortfolioData,
   setTradeLog,
   setDailyResults,
-  setRecommendations
+  setRecommendations,
+  setChatgptInteractions
 }) => {
   const [webAppUrl, setWebAppUrl] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -97,13 +101,17 @@ const GoogleSheetsSetup: React.FC<GoogleSheetsSetupProps> = ({
         case 'dailyResults':
           payload = { action: 'syncDailyResults', dailyResults };
           break;
+        case 'interactions':
+          payload = { action: 'syncChatGPTInteractions', interactions: chatgptInteractions };
+          break;
         case 'all':
           payload = { 
             action: 'syncAll', 
             positions: portfolioData,
             trades: tradeLog,
             recommendations,
-            dailyResults
+            dailyResults,
+            interactions: chatgptInteractions
           };
           break;
       }
@@ -173,6 +181,19 @@ const GoogleSheetsSetup: React.FC<GoogleSheetsSetupProps> = ({
           setTradeLog(convertedTrades);
         }
         
+        if (result.data.interactions) {
+          const convertedInteractions = result.data.interactions.map((interaction: any) => ({
+            id: interaction.ID || Date.now().toString(),
+            date: interaction.Date,
+            prompt: interaction.Prompt,
+            response: interaction.Response,
+            type: interaction.Type || 'OTHER',
+            portfolioValue: parseFloat(interaction['Portfolio Value']) || undefined,
+            cashBalance: parseFloat(interaction['Cash Balance']) || undefined
+          }));
+          setChatgptInteractions(convertedInteractions);
+        }
+        
         setStatus({ type: 'success', message: 'Data imported from Google Sheets successfully!' });
       } else {
         setStatus({ type: 'error', message: 'Failed to import data from Google Sheets' });
@@ -197,8 +218,17 @@ const GoogleSheetsSetup: React.FC<GoogleSheetsSetupProps> = ({
       return syncRecommendations(data.recommendations);
     } else if (action === 'syncDailyResults') {
       return syncDailyResults(data.dailyResults);
+    } else if (action === 'syncChatGPTInteractions') {
+      return syncChatGPTInteractions(data.interactions);
     } else if (action === 'getAllData') {
       return getAllData();
+    } else if (action === 'syncAll') {
+      syncPositions(data.positions);
+      syncTrades(data.trades);
+      syncRecommendations(data.recommendations);
+      syncDailyResults(data.dailyResults);
+      syncChatGPTInteractions(data.interactions);
+      return ContentService.createTextOutput(JSON.stringify({success: true, message: 'All data synced successfully'}));
     }
     
     return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Unknown action'}));
@@ -342,6 +372,35 @@ function syncDailyResults(dailyResults) {
   return ContentService.createTextOutput(JSON.stringify({success: true, message: \`Synced \${dailyResults.length} daily results\`}));
 }
 
+function syncChatGPTInteractions(interactions) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('ChatGPT Interactions');
+  
+  if (!sheet) {
+    sheet = ss.insertSheet('ChatGPT Interactions');
+  }
+  
+  sheet.clear();
+  
+  const headers = ['ID', 'Date', 'Type', 'Prompt', 'Response', 'Portfolio Value', 'Cash Balance'];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  
+  if (interactions.length > 0) {
+    const data = interactions.map(interaction => [
+      interaction.id,
+      interaction.date,
+      interaction.type,
+      interaction.prompt,
+      interaction.response,
+      interaction.portfolioValue || '',
+      interaction.cashBalance || ''
+    ]);
+    sheet.getRange(2, 1, data.length, headers.length).setValues(data);
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({success: true, message: \`Synced \${interactions.length} ChatGPT interactions\`}));
+}
+
 function getAllData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const result = {};
@@ -397,6 +456,21 @@ function getAllData() {
     if (dailyData.length > 1) {
       const headers = dailyData[0];
       result.dailyResults = dailyData.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = row[index];
+        });
+        return obj;
+      });
+    }
+  }
+  
+  const interactionsSheet = ss.getSheetByName('ChatGPT Interactions');
+  if (interactionsSheet) {
+    const interactionsData = interactionsSheet.getDataRange().getValues();
+    if (interactionsData.length > 1) {
+      const headers = interactionsData[0];
+      result.interactions = interactionsData.slice(1).map(row => {
         const obj = {};
         headers.forEach((header, index) => {
           obj[header] = row[index];
@@ -599,6 +673,15 @@ function getAllData() {
               >
                 {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
                 <span>Sync Daily Results ({dailyResults.length})</span>
+              </button>
+              
+              <button
+                onClick={() => syncToSheets('interactions')}
+                disabled={isLoading}
+                className="w-full btn btn-primary flex items-center justify-center space-x-2"
+              >
+                {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                <span>Sync ChatGPT Interactions ({chatgptInteractions.length})</span>
               </button>
               
               <div className="pt-3 border-t border-gray-200">

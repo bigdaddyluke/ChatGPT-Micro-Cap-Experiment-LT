@@ -50,6 +50,16 @@ export interface ChatGPTRecommendation {
   executionNotes?: string;
 }
 
+export interface ChatGPTInteraction {
+  id: string;
+  date: string;
+  prompt: string;
+  response: string;
+  type: 'INITIAL_PORTFOLIO' | 'DAILY_UPDATE' | 'DEEP_RESEARCH' | 'OTHER';
+  portfolioValue?: number;
+  cashBalance?: number;
+}
+
 export interface GoogleSheetsConfig {
   webAppUrl: string;
   isConnected: boolean;
