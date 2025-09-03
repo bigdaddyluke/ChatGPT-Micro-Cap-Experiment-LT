@@ -5,10 +5,11 @@ import Portfolio from './components/Portfolio';
 import TradeExecution from './components/TradeExecution';
 import DataImport from './components/DataImport';
 import GoogleSheetsSetup from './components/GoogleSheetsSetup';
+import StartHere from './components/StartHere';
 import { PortfolioData, TradeLog, DailyResult, ChatGPTRecommendation } from './types';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('start');
   const [portfolioData, setPortfolioData] = useState<PortfolioData[]>([]);
   const [tradeLog, setTradeLog] = useState<TradeLog[]>([]);
   const [dailyResults, setDailyResults] = useState<DailyResult[]>([]);
@@ -33,6 +34,11 @@ function App() {
     if (savedRecommendations) {
       setRecommendations(JSON.parse(savedRecommendations));
     }
+
+    // If user has data, default to dashboard instead of start
+    if (savedPortfolio && JSON.parse(savedPortfolio).length > 0) {
+      setActiveTab('dashboard');
+    }
   }, []);
 
   // Save data to localStorage whenever it changes
@@ -53,8 +59,9 @@ function App() {
   }, [recommendations]);
 
   const tabs = [
+    { id: 'start', label: 'Start Here', icon: TrendingUp },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'portfolio', label: 'Portfolio', icon: TrendingUp },
+    { id: 'portfolio', label: 'Portfolio', icon: DollarSign },
     { id: 'execution', label: 'Trade Execution', icon: DollarSign },
     { id: 'sheets', label: 'Google Sheets', icon: ExternalLink },
     { id: 'import', label: 'Data Import', icon: Upload },
@@ -62,6 +69,14 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'start':
+        return (
+          <StartHere
+            setPortfolioData={setPortfolioData}
+            setRecommendations={setRecommendations}
+            onTabChange={setActiveTab}
+          />
+        );
       case 'dashboard':
         return <Dashboard portfolioData={portfolioData} tradeLog={tradeLog} dailyResults={dailyResults} />;
       case 'portfolio':
@@ -99,7 +114,13 @@ function App() {
           />
         );
       default:
-        return <Dashboard portfolioData={portfolioData} tradeLog={tradeLog} dailyResults={dailyResults} />;
+        return (
+          <StartHere
+            setPortfolioData={setPortfolioData}
+            setRecommendations={setRecommendations}
+            onTabChange={setActiveTab}
+          />
+        );
     }
   };
 
